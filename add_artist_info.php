@@ -1,5 +1,19 @@
 <?php
-require_once('db.php');
+require "dbconnection.php";
+$dbcon = createDbConnection();
+
+$host = 'localhost';
+$dbname = 'your_database_name';
+$user = 'your_database_username';
+$password = 'your_database_password';
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    echo "Connection failed: " . $e->getMessage();
+    die();
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $artist_name = $_POST['artist_name'];
@@ -8,28 +22,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $composer = $_POST['composer'];
     
     try {
-        $conn->beginTransaction();
+        $pdo->beginTransaction();
         
-        // Добавляем нового артиста
-        $stmt = $conn->prepare('INSERT INTO artists (name) VALUES (?)');
+        
+        $stmt = $pdo->prepare('INSERT INTO artists (name) VALUES (?)');
         $stmt->execute([$artist_name]);
-        $artist_id = $conn->lastInsertId();
+        $artist_id = $pdo->lastInsertId();
         
-        // Добавляем новый альбом для артиста
-        $stmt = $conn->prepare('INSERT INTO albums (title, artist_id) VALUES (?, ?)');
+        
+        $stmt = $pdo->prepare('INSERT INTO albums (title, artist_id) VALUES (?, ?)');
         $stmt->execute([$album_name, $artist_id]);
-        $album_id = $conn->lastInsertId();
+        $album_id = $pdo->lastInsertId();
         
-        // Добавляем новую песню в альбом
-        $stmt = $conn->prepare('INSERT INTO tracks (name, album_id, composer) VALUES (?, ?, ?)');
+        
+        $stmt = $pdo->prepare('INSERT INTO tracks (name, album_id, composer) VALUES (?, ?, ?)');
         $stmt->execute([$track_name, $album_id, $composer]);
         
-        $conn->commit();
+        $pdo->commit();
         echo "New artist, album, and track added successfully!";
     } catch(PDOException $e) {
-        $conn->rollBack();
+        $pdo->rollBack();
         echo "Error: " . $e->getMessage();
     }
 } else {
     echo "Invalid request method!";
 }
+
+?>
